@@ -2,220 +2,165 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>千歳JC AI例会 | クイズ演習</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>千歳JC AI例会 クイズ演習</title>
     <style>
         :root {
-            --primary-color: #003366;
-            --secondary-color: #007bff;
-            --success-color: #28a745;
-            --danger-color: #dc3545;
-            --bg-color: #f8f9fa;
+            --primary: #003366;
+            --accent: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --bg: #f4f7f9;
         }
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg-color); color: #333; line-height: 1.6; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        header { text-align: center; border-bottom: 2px solid var(--primary-color); margin-bottom: 30px; padding-bottom: 10px; }
-        h1 { color: var(--primary-color); font-size: 1.5rem; margin: 0; }
-        .progress { font-weight: bold; color: #666; margin-bottom: 10px; }
-        .question-box { font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; min-height: 60px; }
-        .options { display: grid; gap: 10px; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background-color: var(--bg); margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        header h1 { font-size: 1.1rem; color: var(--primary); text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin: 0 0 15px 0; }
+        .progress { font-size: 0.85rem; color: #888; text-align: right; margin-bottom: 10px; }
+        .question-box { font-size: 1.15rem; font-weight: bold; margin-bottom: 20px; line-height: 1.5; min-height: 4em; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
         .option-btn { 
-            background: #fff; border: 2px solid #ddd; padding: 15px; border-radius: 8px; cursor: pointer; 
-            text-align: left; font-size: 1rem; transition: all 0.2s; 
+            background: #fff; border: 2px solid #e0e0e0; padding: 16px; border-radius: 12px; cursor: pointer; 
+            text-align: left; font-size: 1rem; transition: 0.2s; -webkit-appearance: none;
         }
-        .option-btn:hover:not(:disabled) { border-color: var(--secondary-color); background-color: #f0f7ff; }
-        .option-btn.correct { background-color: #d4edda; border-color: #28a745; color: #155724; }
-        .option-btn.wrong { background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
-        .option-btn:disabled { cursor: not-allowed; }
-        .feedback { margin-top: 20px; padding: 15px; border-radius: 8px; display: none; }
-        .hint-box { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; margin-top: 10px; font-size: 0.9rem; padding: 10px; border-radius: 5px; }
-        .controls { margin-top: 30px; display: flex; justify-content: flex-end; }
+        .option-btn:active { background-color: #f8f9fa; transform: scale(0.98); }
+        .option-btn.correct { background-color: #e6ffed; border-color: var(--success); color: #1e4620; }
+        .option-btn.wrong { background-color: #fff5f5; border-color: var(--danger); color: #4b1111; }
+        .hint-box { background: #fff9e6; border: 1px solid #ffeeba; padding: 12px; border-radius: 10px; margin-top: 15px; font-size: 0.85rem; color: #856404; display: none; }
+        .feedback { margin-top: 15px; padding: 15px; border-radius: 10px; display: none; font-size: 0.9rem; border-left: 5px solid transparent; }
         #next-btn { 
-            background-color: var(--primary-color); color: white; border: none; padding: 12px 30px; 
-            border-radius: 5px; font-size: 1rem; cursor: pointer; display: none; 
+            width: 100%; background: var(--primary); color: #fff; border: none; padding: 16px; 
+            border-radius: 12px; font-size: 1.1rem; font-weight: bold; margin-top: 20px; display: none; box-shadow: 0 4px 0 #002244;
         }
-        #result-screen { text-align: center; display: none; }
-        .score-display { font-size: 3rem; font-weight: bold; color: var(--primary-color); margin: 20px 0; }
-        .restart-btn { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        #next-btn:active { transform: translateY(2px); box-shadow: none; }
+        #result-screen { text-align: center; display: none; padding: 20px 0; }
+        .score { font-size: 4.5rem; font-weight: bold; color: var(--primary); margin: 10px 0; }
+        .restart-btn { padding: 15px 40px; border-radius: 10px; border: none; background: #666; color: #fff; font-size: 1rem; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
-        <h1>千歳JC AI例会 | 特別クイズ演習</h1>
-    </header>
-
+    <header><h1>千歳JC AI例会クイズ</h1></header>
     <div id="quiz-screen">
-        <div class="progress" id="progress">第 1 問 / 10</div>
-        <div class="question-box" id="question">読み込み中...</div>
+        <div class="progress" id="progress">1 / 10</div>
+        <div class="question-box" id="question"></div>
         <div class="options" id="options"></div>
-        <div id="hint-area"></div>
-        <div class="feedback" id="feedback"></div>
-        <div class="controls">
-            <button id="next-btn">次の問題へ ➔</button>
-        </div>
+        <div id="hint-box" class="hint-box"></div>
+        <div id="feedback" class="feedback"></div>
+        <button id="next-btn">次の問題へ ➔</button>
     </div>
-
     <div id="result-screen">
-        <h2>演習終了！お疲れ様でした！</h2>
-        <div class="score-display" id="final-score">0 / 10</div>
-        <p id="evaluation-msg"></p>
-        <button class="restart-btn" onclick="location.reload()">もう一度挑戦する</button>
+        <h2>演習終了！</h2>
+        <p>あなたの正解数は...</p>
+        <div class="score" id="final-score">0</div>
+        <p id="eval-msg" style="font-weight:bold; margin-bottom:25px;"></p>
+        <button class="restart-btn" onclick="location.reload()">別の問題に挑戦！</button>
     </div>
 </div>
 
 <script>
-const quizData = [
-    // 【最初の3問：JC・地元ネタ】
-    {
-        q: "千歳青年会議所、米田理事長は第何代の理事長でしょうか？",
-        o: ["61代", "62代", "63代", "64代"],
-        a: 2,
-        r: "米田理事長は第63代の理事長です。歴史の重みを感じますね！",
-        h: "千歳JCの歩んできた年数を思い浮かべてみましょう。"
-    },
-    {
-        q: "今年は千歳市空港開港100周年ですが、開港記念日である「10月22日」は、大正何年のことでしょうか？",
-        o: ["大正13年", "大正14年", "大正15年", "大正16年"],
-        a: 2,
-        r: "正解は大正15年です。市民の手で着陸場が作られたのが千歳空港の始まりです。",
-        h: "100年前の西暦は1926年です。大正の終わり頃ですね。"
-    },
-    {
-        q: "次回の「4月例会」は、4月の何日に開催される予定でしょうか？",
-        o: ["4月8日(水)", "4月9日(木)", "4月10日(金)", "4月11日(土)"],
-        a: 1,
-        r: "4月例会は4月9日(木)開催です。スケジュール帳への登録をお忘れなく！",
-        h: "例会は通常、木曜日に開催されることが多いですね。"
-    },
-    // 【初級 AI問題：4題】
-    {
-        q: "AIに期待通りの文章を作ってもらう際、最も重要な「指示の出し方」はどれでしょうか？",
-        o: ["「適当にいい感じで」と任せる", "具体的詳細（5W1H）や制約条件を明示する", "同じ質問を何度も繰り返す", "難しい専門用語をたくさん使う"],
-        a: 1,
-        r: "具体性が命です。「誰が、何を、何のために」を伝えるのがコツです。",
-        h: "部下に指示を出すときと同じように、具体的に伝えてみましょう。"
-    },
-    {
-        q: "「あなたはプロの経営コンサルタントです」のように、AIに特定の立場を与えて回答させるテクニックを何と呼びますか？",
-        o: ["キャラクター設定", "ロール・プロンプティング（役割設定）", "ゴースト・ライティング", "なりすまし指示"],
-        a: 1,
-        r: "役割を与えることで、回答のトーンや専門性が劇的に向上します。",
-        h: "AIに「何になりきってほしいか」を指定する手法です。"
-    },
-    {
-        q: "AIが出した回答を、見やすく整理させたい時に有効な指示はどれでしょうか？",
-        o: ["「箇条書きや表形式でまとめて」と指定する", "「もっと長く書いて」と頼む", "「英語に翻訳して」と頼む", "「一言で答えて」と制限する"],
-        a: 0,
-        r: "出力形式（表、リスト、章立てなど）を指定すると、実用的な回答が得られます。",
-        h: "「カタチ」を指定することで、後の作業が楽になります。"
-    },
-    {
-        q: "AIが事実とは異なる「もっともらしい嘘」をつく現象を何と呼びますか？",
-        o: ["バグ", "ハルシネーション（幻覚）", "ディープフェイク", "AIボット"],
-        a: 1,
-        r: "ハルシネーションと呼ばれます。AIの回答は必ず人間が事実確認（ファクトチェック）をしましょう。",
-        h: "まるで幻を見ているかのように嘘をつくことからこう呼ばれます。"
-    },
-    // 【中級 AI問題：2題】
-    {
-        q: "複雑な問題を解かせる際、「ステップごとに順を追って考えて」と指示して精度を上げる手法は？",
-        o: ["スピード・リーディング", "Chain-of-Thought（思考の連鎖）", "マルチ・タスキング", "リピート・アフター・ミー"],
-        a: 1,
-        r: "思考のプロセスを明示させることで、論理的なミスを減らす強力な手法です。",
-        h: "人間が落ち着いて考えるときのように、順序立てて考えさせます。"
-    },
-    {
-        q: "AIに「過去のスピーチの例」をいくつか見せてから新しい原稿を作らせる手法は？",
-        o: ["ゼロ・ショット", "フュー・ショット（Few-Shot）", "コピー＆ペースト", "バックアップ"],
-        a: 1,
-        r: "少数の例（Few-Shot）を与えることで、AIはトーンや形式を学習し、期待に沿った回答を出します。",
-        h: "「例」を見せることで、言葉で説明する以上の効果があります。"
-    },
-    // 【上級 AI問題：1題】
-    {
-        q: "「アンケートを分析し、その結果を元に事業計画を作り、さらに広報文を作成する」という一連の作業をAIに行わせる最適な方法は？",
-        o: ["一度のプロンプトで全てを同時に命じる", "作業を工程ごとに分け、前の回答を次の指示に使う（プロンプト・チェイニング）", "AIに全て丸投げして寝て待つ", "3つの異なるAIに同時に別々の指示を出す"],
-        a: 1,
-        r: "タスクを繋げる（チェイニング）ことで、各工程の質が保たれ、精度の高い成果物になります。",
-        h: "大きな仕事を、小さなステップに分けて「リレー形式」で進めるイメージです。"
-    }
+const bank = {
+    jc: [
+        { q: "米田理事長は第何代の理事長？", o: ["61代", "62代", "63代", "64代"], a: 2, r: "第63代です！", h: "千歳JCの歩みは1962年から続いています。" },
+        { q: "千歳空港開港100年。大正15年(1926年)10月22日に完成したのは？", o: ["着陸場", "ターミナルビル", "管制塔", "滑走路"], a: 0, r: "市民の手で「着陸場」が作られたのが始まりです！", h: "当時は重機もなく、人力で作られました。" },
+        { q: "4月例会は何月何日？", o: ["4月7日", "4月8日", "4月9日(木)", "4月10日"], a: 2, r: "4月9日(木)です。全員出席しましょう！", h: "木曜日の開催です。" },
+        { q: "千歳市の「市の鳥」に指定されているのは？", o: ["タンチョウ", "ヤマセミ", "カッコウ", "シジュウカラ"], a: 1, r: "ヤマセミです。千歳川などで見ることができます。", h: "白と黒の鹿の子模様が特徴の鳥です。" },
+        { q: "千歳市の「市の木」に指定されているのは？", o: ["サクラ", "シラカバ", "ナナカマド", "イチイ"], a: 1, r: "シラカバです。北海道らしい爽やかな木ですね。", h: "白い幹が特徴的です。" },
+        { q: "千歳市の「市の花」に指定されているのは？", o: ["サクラ", "スズラン", "ラベンダー", "ヒマワリ"], a: 0, r: "サクラです。青葉公園の桜も綺麗ですね。", h: "春を代表する花です。" },
+        { q: "日本青年会議所（日本JC）の三信条は「奉仕」「修練」とあと一つは？", o: ["協力", "友情", "誠実", "平和"], a: 1, r: "正解は「友情」です。JC活動の醍醐味ですね！", h: "JCIの基本理念の一つです。" },
+        { q: "千歳JCの設立された西暦は何年？", o: ["1952年", "1962年", "1972年", "1982年"], a: 1, r: "1962年（昭和37年）です。", h: "今の理事長の代数から計算してみましょう。" }
+    ],
+    easy: [
+        { q: "AIに指示を出すための命令文のことを何と呼ぶ？", o: ["コマンド", "プロンプト", "キーワード", "スクリプト"], a: 1, r: "プロンプト（Prompt）と呼びます。", h: "「促す」という意味を持つ言葉です。" },
+        { q: "AIに「経営者のように答えて」と役割を与えることを何と呼ぶ？", o: ["なりきり設定", "ロール・プロンプティング", "アバター設定", "ポジション指定"], a: 1, r: "ロールプレイ（役割設定）をさせる手法です。", h: "「役割」を英語で言うと？" },
+        { q: "AIが事実とは異なることを話す現象（ハルシネーション）の別名は？", o: ["バグ", "幻覚", "エラー", "ミス"], a: 1, r: "ハルシネーションは日本語で「幻覚」という意味です。", h: "まるで夢を見ているかのような状態です。" },
+        { q: "ChatGPTを開発している会社はどこ？", o: ["Google", "Apple", "OpenAI", "Microsoft"], a: 2, r: "OpenAI社です。サム・アルトマン氏がCEOを務めています。", h: "「開かれたAI」という意味の社名です。" },
+        { q: "Googleが開発している最新のAIの名前は？", o: ["ChatGPT", "Gemini", "Claude", "Llama"], a: 1, r: "Gemini（ジェミニ）です。スマホアプリでも使えます。", h: "「ふたご座」という意味の名前です。" }
+    ],
+    mid: [
+        { q: "AIに回答の例を1つだけ見せてから答えさせる手法を何と呼ぶ？", o: ["Zero-Shot", "One-Shot", "Few-Shot", "Multi-Shot"], a: 1, r: "例が1つなので「One-Shot」と呼びます。", h: "「1つ」を英語で言うと？" },
+        { q: "「まずステップバイステップで考えて」と指示し、論理的に考えさせる手法は？", o: ["Chain-of-Thought", "Direct-Thinking", "Logi-Pass", "Reasoning"], a: 0, r: "Chain-of-Thought（思考の連鎖）により、複雑な問題の正解率が上がります。", h: "思考を「鎖」のように繋げます。" },
+        { q: "画像生成AIで「描いてほしくない要素」を指定するプロンプトは？", o: ["NGプロンプト", "ネガティブ・プロンプト", "デリート・リスト", "禁止ワード"], a: 1, r: "ネガティブ・プロンプトです。「余分な指」などを防ぐのに使われます。", h: "「消極的・否定的」という意味の英単語です。" },
+        { q: "AIが出す情報の「ランダム性・創造性」を調整する設定値は？", o: ["Speed", "Token", "Temperature", "Volume"], a: 2, r: "Temperature（温度）です。高いと自由な回答、低いと確実な回答になります。", h: "「熱い」とアイデアが飛び出します。" }
+    ],
+    hard: [
+        { q: "AIに一度に全てをやらせず、複数の指示をリレーのように繋げる手法は？", o: ["プロンプト・チェイニング", "プロンプト・フロー", "プロンプト・リレー", "工程管理"], a: 0, r: "チェイニング（Chaining）により、非常に精度の高い成果物が作れます。", h: "鎖（チェーン）にする、という意味です。" },
+        { q: "AIのセキュリティで「外部に漏らしたくないデータ」を扱う際の鉄則は？", o: ["パスワードを言う", "匿名化・ダミー化する", "夜中に使う", "気にせず入力する"], a: 1, r: "名前や企業秘密をダミー（例：千歳 太郎 → 会員A）に置き換えるのが基本です。", h: "AIに教えてもいい状態に加工しましょう。" },
+        { q: "AIが一度に扱える情報の長さの単位を何と呼ぶ？", o: ["ワード", "バイト", "トークン", "ビット"], a: 2, r: "トークン（Token）です。これを超えると古い内容を忘れてしまいます。", h: "「しるし・代用貨幣」などの意味がある言葉です。" }
+    ]
+};
+
+const shuffle = (array) => [...array].sort(() => Math.random() - 0.5);
+
+// 最終的なクイズセットを作成（10問）
+let quizSet = [
+    ...shuffle(bank.jc).slice(0, 3),    // JC・千歳から3問
+    ...shuffle(bank.easy).slice(0, 4),  // 初級AIから4問
+    ...shuffle(bank.mid).slice(0, 2),   // 中級AIから2問
+    ...shuffle(bank.hard).slice(0, 1)   // 上級AIから1問
 ];
 
-let currentIdx = 0;
-let score = 0;
+let current = 0, score = 0;
+const qEl = document.getElementById('question'), optEl = document.getElementById('options');
+const fbEl = document.getElementById('feedback'), hintEl = document.getElementById('hint-box');
+const nextBtn = document.getElementById('next-btn'), progEl = document.getElementById('progress');
 
-const qEl = document.getElementById('question');
-const optEl = document.getElementById('options');
-const progEl = document.getElementById('progress');
-const feedbackEl = document.getElementById('feedback');
-const nextBtn = document.getElementById('next-btn');
-const hintArea = document.getElementById('hint-area');
-
-function loadQuestion() {
-    const data = quizData[currentIdx];
-    progEl.innerText = `第 ${currentIdx + 1} 問 / ${quizData.length}`;
+function render() {
+    const data = quizSet[current];
+    progEl.innerText = `${current + 1} / 10`;
     qEl.innerText = data.q;
     optEl.innerHTML = '';
-    hintArea.innerHTML = `<div class="hint-box"><strong>💡 ヒント:</strong> ${data.h}</div>`;
-    feedbackEl.style.display = 'none';
-    nextBtn.style.display = 'none';
+    fbEl.style.display = nextBtn.style.display = 'none';
+    hintEl.innerHTML = `<strong>💡 ヒント:</strong> ${data.h}`;
+    hintEl.style.display = 'block';
 
-    data.o.forEach((option, i) => {
+    data.o.forEach((opt, i) => {
         const btn = document.createElement('button');
-        btn.innerText = option;
         btn.className = 'option-btn';
-        btn.onclick = () => checkAnswer(i);
+        btn.innerText = opt;
+        btn.onclick = () => select(i);
         optEl.appendChild(btn);
     });
 }
 
-function checkAnswer(selectedIdx) {
-    const data = quizData[currentIdx];
-    const buttons = optEl.getElementsByClassName('option-btn');
-    for (let btn of buttons) btn.disabled = true;
-
-    if (selectedIdx === data.a) {
-        buttons[selectedIdx].classList.add('correct');
-        feedbackEl.innerHTML = `<strong>⭕ 正解！</strong><br>${data.r}`;
-        feedbackEl.style.backgroundColor = '#d4edda';
+function select(idx) {
+    const data = quizSet[current], btns = optEl.getElementsByClassName('option-btn');
+    for (let b of btns) b.disabled = true;
+    
+    if (idx === data.a) {
+        btns[idx].classList.add('correct');
+        fbEl.innerHTML = `<strong>⭕ 正解！</strong><br>${data.r}`;
+        fbEl.style.borderLeftColor = "var(--success)";
         score++;
     } else {
-        buttons[selectedIdx].classList.add('wrong');
-        buttons[data.a].classList.add('correct');
-        feedbackEl.innerHTML = `<strong>❌ 不正解...</strong><br>正解は「${data.o[data.a]}」でした。<br>${data.r}`;
-        feedbackEl.style.backgroundColor = '#f8d7da';
+        btns[idx].classList.add('wrong');
+        btns[data.a].classList.add('correct');
+        fbEl.innerHTML = `<strong>❌ 残念...</strong><br>正解は「${data.o[data.a]}」でした。<br>${data.r}`;
+        fbEl.style.borderLeftColor = "var(--danger)";
     }
-    feedbackEl.style.display = 'block';
+    fbEl.style.display = 'block';
     nextBtn.style.display = 'block';
+    hintEl.style.display = 'none';
 }
 
 nextBtn.onclick = () => {
-    currentIdx++;
-    if (currentIdx < quizData.length) {
-        loadQuestion();
-    } else {
-        showResults();
+    current++;
+    if (current < 10) render();
+    else {
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = score;
+        let msg = "";
+        if(score === 10) msg = "完璧です！千歳のAIマスターはあなたです！";
+        else if(score >= 8) msg = "素晴らしい！AIを駆使して千歳を盛り上げましょう！";
+        else if(score >= 5) msg = "ナイス！AIの可能性を感じていただけたでしょうか？";
+        else msg = "伸びしろ抜群！AIと一緒にどんどん試していきましょう！";
+        document.getElementById('eval-msg').innerText = msg;
     }
 };
 
-function showResults() {
-    document.getElementById('quiz-screen').style.display = 'none';
-    const resScreen = document.getElementById('result-screen');
-    resScreen.style.display = 'block';
-    document.getElementById('final-score').innerText = `${score} / ${quizData.length}`;
-    
-    let msg = "";
-    if (score === quizData.length) msg = "完璧です！千歳JCの誇るAIエキスパートですね！";
-    else if (score >= 8) msg = "素晴らしい！AIを使いこなして地域を盛り上げましょう！";
-    else if (score >= 5) msg = "ナイス！AIと仲良くなる第一歩を踏み出しましたね。";
-    else msg = "まずはAIに「4月例会の案内を作って」と頼むところから始めてみましょう！";
-    
-    document.getElementById('evaluation-msg').innerText = msg;
-}
-
-loadQuestion();
+render();
 </script>
 </body>
 </html>
