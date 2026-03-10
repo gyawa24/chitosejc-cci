@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>千歳JC AI例会 | プロンプトエンジニアリング演習</title>
+    <style>
+        :root {
+            --primary-color: #003366; /* JCをイメージした濃紺 */
+            --secondary-color: #007bff;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --bg-color: #f8f9fa;
+        }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg-color); color: #333; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        header { text-align: center; border-bottom: 2px solid var(--primary-color); margin-bottom: 30px; padding-bottom: 10px; }
+        h1 { color: var(--primary-color); font-size: 1.5rem; margin: 0; }
+        .progress { font-weight: bold; color: #666; margin-bottom: 10px; }
+        .question-box { font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; min-height: 60px; }
+        .options { display: grid; gap: 10px; }
+        .option-btn { 
+            background: #fff; border: 2px solid #ddd; padding: 15px; border-radius: 8px; cursor: pointer; 
+            text-align: left; font-size: 1rem; transition: all 0.2s; 
+        }
+        .option-btn:hover:not(:disabled) { border-color: var(--secondary-color); background-color: #f0f7ff; }
+        .option-btn.correct { background-color: #d4edda; border-color: #28a745; color: #155724; }
+        .option-btn.wrong { background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
+        .option-btn:disabled { cursor: not-allowed; }
+        .feedback { margin-top: 20px; padding: 15px; border-radius: 8px; display: none; }
+        .hint-box { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; margin-top: 10px; font-size: 0.9rem; padding: 10px; border-radius: 5px; }
+        .controls { margin-top: 30px; display: flex; justify-content: flex-end; }
+        #next-btn { 
+            background-color: var(--primary-color); color: white; border: none; padding: 12px 30px; 
+            border-radius: 5px; font-size: 1rem; cursor: pointer; display: none; 
+        }
+        #result-screen { text-align: center; display: none; }
+        .score-display { font-size: 3rem; font-weight: bold; color: var(--primary-color); margin: 20px 0; }
+        .restart-btn { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>千歳JC AI例会 プロンプト演習【実践編】</h1>
+    </header>
+
+    <div id="quiz-screen">
+        <div class="progress" id="progress">第 1 問 / 20</div>
+        <div class="question-box" id="question">読み込み中...</div>
+        <div class="options" id="options"></div>
+        <div id="hint-area"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="controls">
+            <button id="next-btn">次の問題へ ➔</button>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <h2>演習終了！お疲れ様でした！</h2>
+        <div class="score-display" id="final-score">0 / 20</div>
+        <p id="evaluation-msg"></p>
+        <button class="restart-btn" onclick="location.reload()">もう一度挑戦する</button>
+    </div>
+</div>
+
+<script>
+const quizData = [
+    {
+        q: "事業計画の妥当性を検証する際、AIに「わざと反対意見やリスクを厳しく指摘する役」を演じさせる手法を何と呼びますか？",
+        o: ["デビルズ・アドボケート（悪魔の代弁者）設定", "ネガティブ・バイアス・プロンプティング", "ゼロショット・プロンプティング", "エラー・コレクション・ロール"],
+        a: 0,
+        r: "批判的な視点をあえて持たせることで、計画の穴を事前に見つける効果的な手法です。",
+        h: "あえて「嫌われ役」になってもらうことで、議論を深める手法です。"
+    },
+    {
+        q: "複雑な青少年育成事業のロジックを整理させる際、「ステップごとに順を追って考えて」と指示することで回答の精度が上がる手法は？",
+        o: ["Chain-of-Thought (思考の連鎖)", "Few-Shotプロンプティング", "再帰的要約", "トピック・モデリング"],
+        a: 0,
+        r: "AIに中間的な思考プロセスを出力させることで、論理的な誤りを減らすテクニックです。",
+        h: "人間と同じように、AIにも「落ち着いて順序よく」考えさせることが大切です。"
+    },
+    {
+        q: "新入会員勧誘のメール文面を、過去の成功例に近いトーンで作りたい場合、最も効果的な方法は？",
+        o: ["「熱血で誠実な感じで書いて」と頼む", "成功例の文面を3つほど提示してから指示する", "「効率的な勧誘メールを書いて」と頼む", "メールの件名だけを指定する"],
+        a: 1,
+        r: "Few-Shotプロンプティングにより、AIは手本から文脈やトーンを正確に把握できます。",
+        h: "「習うより慣れろ」のように、実際の手本を見せるのが近道です。"
+    },
+    {
+        q: "事業予算案をAIに作らせる際、「10万円以内」「飲食費は含めない」といった『やってはいけないこと』を指定するプロンプトは？",
+        o: ["除外ワード・リスト", "リミット・セッティング", "ネガティブ・プロンプト（制約事項）", "デリート・コマンド"],
+        a: 2,
+        r: "出力に含めてほしくない要素や制限を明示することで、回答のズレを防ぎます。",
+        h: "「何をすべきか」だけでなく「何をしてはいけないか」の境界線を引きます。"
+    },
+    {
+        q: "AIが地名や名前を間違えて回答した（ハルシネーション）際、最も適切な対処法は？",
+        o: ["「嘘をつくな」と怒鳴る", "正しい情報を入力として与え、「この事実に基づき修正して」と指示する", "AIの使用を諦めて手書きする", "同じ質問を何度も繰り返す"],
+        a: 1,
+        r: "正しい情報を再提供することで、AIはその文脈に基づいた正確な出力を出せるようになります。",
+        h: "AIに足りなかった「正しい辞書」をその場で渡してあげましょう。"
+    },
+    {
+        q: "アンケート結果から計画書、チラシ、リリースを一度に作りたい。最適なアプローチは？",
+        o: ["すべて一回の長いプロンプトで命令する", "分析→計画→チラシ→リリースの順に指示を繋げる", "4つの異なるAIサービスに別々に依頼する", "最初にチラシを作り、それを元に分析させる"],
+        a: 1,
+        r: "段階的に進める（チェイニング）ことで、各ステップの成果を確実に次へ繋げられます。",
+        h: "料理と同じように、下準備から盛り付けまで順序よく進めましょう。"
+    },
+    {
+        q: "画像生成AIで「千歳市の観光ポスター」を作る際、高品質な画像を得るために必要な要素は？",
+        o: ["「すごくきれいなポスター」という一言", "被写体、スタイル、光、画角などの詳細な描写", "千歳市の人口と面積のデータ", "日本語の文章をそのまま使う"],
+        a: 1,
+        r: "画像生成では視覚的パラメータ（構図やスタイル）の具体的指定が結果を左右します。",
+        h: "カメラマンに指示を出すように、構図や光を具体的に伝えます。"
+    },
+    {
+        q: "AIの回答の意外性や創造性を高めるために調整するパラメータは何？",
+        o: ["Temperature（温度）", "Token Limit（最大単語数）", "System Prompt（システム指示）", "Response Speed（回答速度）"],
+        a: 0,
+        r: "値を上げると多様性と意外性が増し、下げると確実で保守的な回答になります。",
+        h: "「熱く」なれば自由奔放に、「冷たく」なれば真面目になる数値です。"
+    },
+    {
+        q: "「欠席者へのフォローアップ文面」を改善し、相手の心に響くものにする追加指示は？",
+        o: ["「3秒で読んで返信したくなるように」と命令する", "「敬語を使わないで」と指示する", "「相手を気遣う一文を入れ、温かいトーンで」と補足する", "「欠席理由を厳しく問いただして」と追加する"],
+        a: 2,
+        r: "感情的なトーンや目的を明示することで、事務的ではない血の通った文章になります。",
+        h: "AIには「何を」だけでなく「どう感じさせたいか」を伝えます。"
+    },
+    {
+        q: "SWOT分析をAIに行わせる際、千歳JCに特化した精度を得るための前提情報は？",
+        o: ["昨年の全国大会の開催地情報", "「とにかく凄い強みを見つけて」という応援", "人口動態、主要産業、メンバー数などの背景データ", "理事長のスローガンの漢字の由来"],
+        a: 2,
+        r: "AIが持っていないローカルな最新コンテキストを与えることで一般論を脱却できます。",
+        h: "AIは「千歳の今」を知りません。あなたが教えてあげる必要があります。"
+    },
+    {
+        q: "議事録からネクストアクションを抽出させる際、見落としを防ぐ改善策は？",
+        o: ["「まず決定事項を箇条書きにし、その後で担当者を抽出して」と2段階で指示", "「絶対に見落とさないで」と強調する", "議事録を10回連続で読み込ませる", "「AIには無理」と諦める"],
+        a: 0,
+        r: "思考ステップを分けることで、情報漏れを防ぎ、抽出の精度を高めることができます。",
+        h: "二段階右折のような指示が、複雑なタスクでは有効です。"
+    },
+    {
+        q: "30周年記念誌の構成案で「斬新なアイデア」を出させる工夫は？",
+        o: ["「普通の記念誌にしてください」と指示する", "「シリコンバレーのベンチャー視点を取り入れて」と異業種視点を与える", "「29周年の内容と同じでいい」と伝える", "「短時間で考えて」と急かす"],
+        a: 1,
+        r: "異なる視点を強制的に掛け合わせることで、発想の飛躍（バイアス打破）を生みます。",
+        h: "「もし、AppleがJCの記念誌を作ったら？」と考えてみましょう。"
+    },
+    {
+        q: "AIのスピーチ原稿が「人間味がない」と感じた際の修正ポイントは？",
+        o: ["具体的なエピソードや個人的な失敗談を加え、織り込むよう指示する", "「もっと感動的な言葉を並べて」と抽象的に指示する", "フォントを明朝体にする", "「理事長が言いそうな言葉」と指定する"],
+        a: 0,
+        r: "個人的な体験談こそが、AIには生成できない「人間らしさ」の源泉になります。",
+        h: "あなたしか知らない「物語」をAIに貸してあげてください。"
+    },
+    {
+        q: "事業計画書のブラッシュアップで、AIに「鋭い批判」をしてもらう指示は？",
+        o: ["「この計画はダメなところがありますか？」と聞く", "「100点満点で採点して」と頼む", "「この計画が失敗する理由を5つ挙げ、その対策を提案して」", "「文字数を半分にして」と指示する"],
+        a: 2,
+        r: "「失敗前提（プレモーテム）」で考えさせることで、実用的なリスク回避策が得られます。",
+        h: "「もし失敗するとしたら？」という問いは、最強のリスクマネジメントです。"
+    },
+    {
+        q: "JCの複雑な組織構造（LOM〜日本）をAIに理解させる一番効率的な準備は？",
+        o: ["「あなたはJCのプロです」と1回だけ言う", "「JC組織の階層図や相関関係」を説明したテキストを最初に読み込ませる", "特に何もせず、AIの知識に任せる", "Googleで調べてから自分で書く"],
+        a: 1,
+        r: "定義情報を先に与えることで、AIが持つ一般知識との混同を避けることができます。",
+        h: "AIに「我が家の家系図」を教えるのと同じ感覚です。"
+    },
+    {
+        q: "スタンプラリーの景品アイデアを100個出したい。効率的なプロンプトは？",
+        o: ["「カテゴリーを5つ出し、各20個ずつ具体案を出して」", "「100個出すまで止まらないで」と命令する", "何度も「他には？」と聞き続ける", "100個を1秒で出すよう指示する"],
+        a: 0,
+        r: "大きなタスクを構造化（分割）して指示することで、質と量を両立できます。",
+        h: "「数」だけでなく「整理整頓のルール」を一緒に指示します。"
+    },
+    {
+        q: "AIの生成文章が長くて読みにくい。読みやすくする出力形式の指定は？",
+        o: ["「小学生でもわかるようにして」とだけ言う", "「結論、理由、具体例の順に構成し、太字や箇条書きを活用して」", "「100文字以内で」と極端に制限する", "「改行を増やして」と指示する"],
+        a: 1,
+        r: "構成（PREP等）と視覚的要素（装飾）を指定することで可読性が劇的に向上します。",
+        h: "「どう書くか」よりも「どう見せるか」をデザインします。"
+    },
+    {
+        q: "対話の途中で、議論を整理して次への提案を求めたい。効果的な指示は？",
+        o: ["「もう一度最初から説明して」と言う", "「ここまでの内容を要約し、未解決の課題と次に決めるべきことを提示して」", "ログを全部コピーして新しいチャットに貼る", "「どう思いますか？」と漠然と聞く"],
+        a: 1,
+        r: "「まとめ」と「アクション提示」をセットにすることで議論を前進させられます。",
+        h: "議長として、一旦「まとめ」と「次の議題」を振るイメージです。"
+    },
+    {
+        q: "機密性の高いメンバー個人情報を含む名簿の整理を頼みたい。正しい判断は？",
+        o: ["名前や住所を匿名化（会員Aなど）してから入力する", "「この情報は秘密です」とプロンプトに書く", "AIは機械なので安全だと信じる", "パスワード付きファイルをアップロードする"],
+        a: 0,
+        r: "入力データは学習利用されるリスクがあるため、情報の匿名化は必須です。",
+        h: "「AIは世界中に繋がっている黒板」だと考えてください。"
+    },
+    {
+        q: "例会の最後に「AIってすごい！」と実感してもらう締めプロンプトは？",
+        o: ["「AIの未来について難しい論文を書いて」", "「今日の学びを振り返り、明日からの活動に活かせる宣言を提案して」", "「今日の例会は何点でしたか？」と聞く", "「さようなら」とだけ打つ"],
+        a: 1,
+        r: "自分事化されたアクションをAIが提案することで、技術の利便性が深く記憶に残ります。",
+        h: "最後は「自分たちの未来」をAIと一緒に描いてみましょう。"
+    }
+];
+
+let currentIdx = 0;
+let score = 0;
+
+const qEl = document.getElementById('question');
+const optEl = document.getElementById('options');
+const progEl = document.getElementById('progress');
+const feedbackEl = document.getElementById('feedback');
+const nextBtn = document.getElementById('next-btn');
+const hintArea = document.getElementById('hint-area');
+
+function loadQuestion() {
+    const data = quizData[currentIdx];
+    progEl.innerText = `第 ${currentIdx + 1} 問 / ${quizData.length}`;
+    qEl.innerText = data.q;
+    optEl.innerHTML = '';
+    hintArea.innerHTML = `<div class="hint-box"><strong>💡 ヒント:</strong> ${data.h}</div>`;
+    feedbackEl.style.display = 'none';
+    nextBtn.style.display = 'none';
+
+    data.o.forEach((option, i) => {
+        const btn = document.createElement('button');
+        btn.innerText = option;
+        btn.className = 'option-btn';
+        btn.onclick = () => checkAnswer(i);
+        optEl.appendChild(btn);
+    });
+}
+
+function checkAnswer(selectedIdx) {
+    const data = quizData[currentIdx];
+    const buttons = optEl.getElementsByClassName('option-btn');
+    
+    // 全ボタン無効化
+    for (let btn of buttons) btn.disabled = true;
+
+    if (selectedIdx === data.a) {
+        buttons[selectedIdx].classList.add('correct');
+        feedbackEl.innerHTML = `<strong>⭕ 正解！</strong><br>${data.r}`;
+        feedbackEl.style.backgroundColor = '#d4edda';
+        score++;
+    } else {
+        buttons[selectedIdx].classList.add('wrong');
+        buttons[data.a].classList.add('correct');
+        feedbackEl.innerHTML = `<strong>❌ 不正解...</strong><br>正解は「${data.o[data.a]}」でした。<br>${data.r}`;
+        feedbackEl.style.backgroundColor = '#f8d7da';
+    }
+    
+    feedbackEl.style.display = 'block';
+    nextBtn.style.display = 'block';
+}
+
+nextBtn.onclick = () => {
+    currentIdx++;
+    if (currentIdx < quizData.length) {
+        loadQuestion();
+    } else {
+        showResults();
+    }
+};
+
+function showResults() {
+    document.getElementById('quiz-screen').style.display = 'none';
+    const resScreen = document.getElementById('result-screen');
+    resScreen.style.display = 'block';
+    document.getElementById('final-score').innerText = `${score} / ${quizData.length}`;
+    
+    let msg = "";
+    if (score === quizData.length) msg = "完璧です！今日からあなたが千歳JCのAI委員長です！";
+    else if (score >= 15) msg = "素晴らしい！AIを使いこなしてJC活動を劇的に効率化しましょう！";
+    else if (score >= 10) msg = "ナイス！プロンプトのコツが掴めてきましたね。";
+    else msg = "伸び代しかありません！AIと一緒にどんどん試していきましょう！";
+    
+    document.getElementById('evaluation-msg').innerText = msg;
+}
+
+loadQuestion();
+</script>
+</body>
+</html>
