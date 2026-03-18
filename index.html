@@ -3,39 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>千歳JC AI例会 クイズ演習</title>
+    <title>千歳JC AI例会クイズ【総務省ガイドライン準拠】</title>
     <style>
         :root {
-            --primary: #003366;
+            --primary: #003366; /* JC配色：濃紺 */
             --accent: #007bff;
             --success: #28a745;
             --danger: #dc3545;
             --bg: #f4f7f9;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background-color: var(--bg); margin: 0; padding: 15px; color: #333; }
+        body { font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background-color: var(--bg); margin: 0; padding: 15px; color: #333; line-height: 1.4; }
         .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        header h1 { font-size: 1.1rem; color: var(--primary); text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin: 0 0 15px 0; }
-        .progress { font-size: 0.85rem; color: #888; text-align: right; margin-bottom: 10px; }
-        .question-box { font-size: 1.15rem; font-weight: bold; margin-bottom: 20px; line-height: 1.5; min-height: 4em; }
+        header h1 { font-size: 1rem; color: var(--primary); text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin: 0 0 15px 0; font-weight: bold; }
+        .progress { font-size: 0.8rem; color: #888; text-align: right; margin-bottom: 10px; }
+        .question-box { font-size: 1.1rem; font-weight: bold; margin-bottom: 20px; min-height: 4em; }
         .options { display: flex; flex-direction: column; gap: 10px; }
         .option-btn { 
             background: #fff; border: 2px solid #e0e0e0; padding: 16px; border-radius: 12px; cursor: pointer; 
-            text-align: left; font-size: 1rem; transition: 0.2s; -webkit-appearance: none;
+            text-align: left; font-size: 0.95rem; transition: 0.2s; -webkit-appearance: none;
         }
         .option-btn:active { background-color: #f8f9fa; transform: scale(0.98); }
         .option-btn.correct { background-color: #e6ffed; border-color: var(--success); color: #1e4620; }
         .option-btn.wrong { background-color: #fff5f5; border-color: var(--danger); color: #4b1111; }
+        .option-btn:disabled { cursor: not-allowed; }
         .hint-box { background: #fff9e6; border: 1px solid #ffeeba; padding: 12px; border-radius: 10px; margin-top: 15px; font-size: 0.85rem; color: #856404; display: none; }
         .feedback { margin-top: 15px; padding: 15px; border-radius: 10px; display: none; font-size: 0.9rem; border-left: 5px solid transparent; }
         #next-btn { 
             width: 100%; background: var(--primary); color: #fff; border: none; padding: 16px; 
-            border-radius: 12px; font-size: 1.1rem; font-weight: bold; margin-top: 20px; display: none; box-shadow: 0 4px 0 #002244;
+            border-radius: 12px; font-size: 1.1rem; font-weight: bold; margin-top: 20px; display: none;
         }
-        #next-btn:active { transform: translateY(2px); box-shadow: none; }
         #result-screen { text-align: center; display: none; padding: 20px 0; }
-        .score { font-size: 4.5rem; font-weight: bold; color: var(--primary); margin: 10px 0; }
-        .restart-btn { padding: 15px 40px; border-radius: 10px; border: none; background: #666; color: #fff; font-size: 1rem; cursor: pointer; }
+        .score { font-size: 4rem; font-weight: bold; color: var(--primary); margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -55,60 +54,59 @@
         <p>あなたの正解数は...</p>
         <div class="score" id="final-score">0</div>
         <p id="eval-msg" style="font-weight:bold; margin-bottom:25px;"></p>
-        <button class="restart-btn" onclick="location.reload()">別の問題に挑戦！</button>
+        <button onclick="location.reload()" style="padding:15px 40px; border-radius:10px; border:none; background:#666; color:#fff; cursor:pointer;">別の問題に挑戦！</button>
     </div>
 </div>
 
 <script>
+// 問題バンク（ここを増やすとランダムのバリエーションが増えます）
 const bank = {
+    // 【最初の2問：JC問題（画像から採用、固定数抽出）】
     jc: [
-        { q: "米田理事長は第何代の理事長？", o: ["61代", "62代", "63代", "64代"], a: 2, r: "第63代です！", h: "千歳JCの歩みは1962年から続いています。" },
-        { q: "千歳空港開港100年。大正15年(1926年)10月22日に完成したのは？", o: ["着陸場", "ターミナルビル", "管制塔", "滑走路"], a: 0, r: "市民の手で「着陸場」が作られたのが始まりです！", h: "当時は重機もなく、人力で作られました。" },
-        { q: "4月例会は何月何日？", o: ["4月7日", "4月8日", "4月9日(木)", "4月10日"], a: 2, r: "4月9日(木)です。全員出席しましょう！", h: "木曜日の開催です。" },
-        { q: "千歳市の「市の鳥」に指定されているのは？", o: ["タンチョウ", "ヤマセミ", "カッコウ", "シジュウカラ"], a: 1, r: "ヤマセミです。千歳川などで見ることができます。", h: "白と黒の鹿の子模様が特徴の鳥です。" },
-        { q: "千歳市の「市の木」に指定されているのは？", o: ["サクラ", "シラカバ", "ナナカマド", "イチイ"], a: 1, r: "シラカバです。北海道らしい爽やかな木ですね。", h: "白い幹が特徴的です。" },
-        { q: "千歳市の「市の花」に指定されているのは？", o: ["サクラ", "スズラン", "ラベンダー", "ヒマワリ"], a: 0, r: "サクラです。青葉公園の桜も綺麗ですね。", h: "春を代表する花です。" },
-        { q: "日本青年会議所（日本JC）の三信条は「奉仕」「修練」とあと一つは？", o: ["協力", "友情", "誠実", "平和"], a: 1, r: "正解は「友情」です。JC活動の醍醐味ですね！", h: "JCIの基本理念の一つです。" },
-        { q: "千歳JCの設立された西暦は何年？", o: ["1952年", "1962年", "1972年", "1982年"], a: 1, r: "1962年（昭和37年）です。", h: "今の理事長の代数から計算してみましょう。" }
+        { q: "千歳青年会議所、米田理事長は第何代の理事長？", o: ["61代", "62代", "63代", "64代"], a: 2, r: "第63代です！千歳JCの歴史は1962年から続いています。", h: "今の理事長の代数を思い浮かべてみましょう。" },
+        { q: "次回の「4月例会」は、何月何日（木）に開催されますか？", o: ["4月2日", "4月9日", "4月16日", "4月23日"], a: 1, r: "4月9日(木)です。スケジュール登録をお忘れなく！", h: "例会は通常、木曜日に開催されます。" }
     ],
-    easy: [
-        { q: "AIに指示を出すための命令文のことを何と呼ぶ？", o: ["コマンド", "プロンプト", "キーワード", "スクリプト"], a: 1, r: "プロンプト（Prompt）と呼びます。", h: "「促す」という意味を持つ言葉です。" },
-        { q: "AIに「経営者のように答えて」と役割を与えることを何と呼ぶ？", o: ["なりきり設定", "ロール・プロンプティング", "アバター設定", "ポジション指定"], a: 1, r: "ロールプレイ（役割設定）をさせる手法です。", h: "「役割」を英語で言うと？" },
-        { q: "AIが事実とは異なることを話す現象（ハルシネーション）の別名は？", o: ["バグ", "幻覚", "エラー", "ミス"], a: 1, r: "ハルシネーションは日本語で「幻覚」という意味です。", h: "まるで夢を見ているかのような状態です。" },
-        { q: "ChatGPTを開発している会社はどこ？", o: ["Google", "Apple", "OpenAI", "Microsoft"], a: 2, r: "OpenAI社です。サム・アルトマン氏がCEOを務めています。", h: "「開かれたAI」という意味の社名です。" },
-        { q: "Googleが開発している最新のAIの名前は？", o: ["ChatGPT", "Gemini", "Claude", "Llama"], a: 1, r: "Gemini（ジェミニ）です。スマホアプリでも使えます。", h: "「ふたご座」という意味の名前です。" }
-    ],
-    mid: [
-        { q: "AIに回答の例を1つだけ見せてから答えさせる手法を何と呼ぶ？", o: ["Zero-Shot", "One-Shot", "Few-Shot", "Multi-Shot"], a: 1, r: "例が1つなので「One-Shot」と呼びます。", h: "「1つ」を英語で言うと？" },
-        { q: "「まずステップバイステップで考えて」と指示し、論理的に考えさせる手法は？", o: ["Chain-of-Thought", "Direct-Thinking", "Logi-Pass", "Reasoning"], a: 0, r: "Chain-of-Thought（思考の連鎖）により、複雑な問題の正解率が上がります。", h: "思考を「鎖」のように繋げます。" },
-        { q: "画像生成AIで「描いてほしくない要素」を指定するプロンプトは？", o: ["NGプロンプト", "ネガティブ・プロンプト", "デリート・リスト", "禁止ワード"], a: 1, r: "ネガティブ・プロンプトです。「余分な指」などを防ぐのに使われます。", h: "「消極的・否定的」という意味の英単語です。" },
-        { q: "AIが出す情報の「ランダム性・創造性」を調整する設定値は？", o: ["Speed", "Token", "Temperature", "Volume"], a: 2, r: "Temperature（温度）です。高いと自由な回答、低いと確実な回答になります。", h: "「熱い」とアイデアが飛び出します。" }
-    ],
-    hard: [
-        { q: "AIに一度に全てをやらせず、複数の指示をリレーのように繋げる手法は？", o: ["プロンプト・チェイニング", "プロンプト・フロー", "プロンプト・リレー", "工程管理"], a: 0, r: "チェイニング（Chaining）により、非常に精度の高い成果物が作れます。", h: "鎖（チェーン）にする、という意味です。" },
-        { q: "AIのセキュリティで「外部に漏らしたくないデータ」を扱う際の鉄則は？", o: ["パスワードを言う", "匿名化・ダミー化する", "夜中に使う", "気にせず入力する"], a: 1, r: "名前や企業秘密をダミー（例：千歳 太郎 → 会員A）に置き換えるのが基本です。", h: "AIに教えてもいい状態に加工しましょう。" },
-        { q: "AIが一度に扱える情報の長さの単位を何と呼ぶ？", o: ["ワード", "バイト", "トークン", "ビット"], a: 2, r: "トークン（Token）です。これを超えると古い内容を忘れてしまいます。", h: "「しるし・代用貨幣」などの意味がある言葉です。" }
-    ]
+    // 【残りの8問：AI問題（総務省ガイドライン準拠、難易度順かつランダム）】
+    ai: {
+        easy: [
+            // 原則（人間中心）、リスク定義（ハルシネーション、バイアス）
+            { q: "総務省のガイドラインにおいて、AI利活用で最優先とされる原則は何ですか？", o: ["イノベーション促進原則", "人間中心の原則", "透明性の原則", "安全性の原則"], a: 1, r: "AIは道具であり、人間の幸せに貢献することを最優先とする「人間中心」が原則です。", h: "AIが主役ではなく、人間が主役であることを意味します。" },
+            { q: "AIが学習データに含まれる偏りを反映し、不当な差別や偏見を生み出すリスクを何と呼びますか？", o: ["ハルシネーション", "バイアス", "オーバーフィッティング", "ディープフェイク"], a: 1, r: "「データの偏り」による差別や偏見は「バイアス」と呼ばれます。", h: "データの「偏り」を意味する言葉です。" },
+            { q: "生成AIを利用する際、プライバシー保護の観点から特に注意すべき点は何ですか？", o: ["AIの処理速度", "AIの回答の創造性", "個人情報の入力と取り扱い", "AIのエネルギー消費量"], a: 2, r: "入力されたデータが学習に使われ、漏洩したり、予期せぬ形で利用されたりするリスクがあります。", h: "自分や他人の「情報」を守ることが大切です。" }
+        ],
+        mid: [
+            // 具体的な原則の適用、リスク対策、ステークホルダー責任
+            { q: "ガイドラインにおける「透明性の原則」を達成するために、AI提供者が行うべきことは？", o: ["AIの内部コードをすべて公開する", "AIの判断根拠やデータの出所を可能な限り説明可能にする", "AIの利用料金を一律にする", "AIの開発チーム全員の名前を公表する"], a: 1, r: "ユーザーがAIの判断を理解し、信頼できるようにするために、「説明可能性」が求められます。", h: "「なぜその回答になったか」をユーザーがわかるようにします。" },
+            { q: "生成AIを利用する際、著作権侵害のリスクを避けるために適切な行動はどれですか？", o: ["AIが生成したものは自由に使えると考える", "AIが生成したコンテンツの類似性を確認し、他人の著作物を模倣していないかチェックする", "AIの回答をそのまま自分の著作物として発表する", "AIに「著作権を侵害しないで」と指示する"], a: 1, r: "AIは既存の著作物を学習しているため、生成物が意図せず類似し、著作権侵害となる可能性があります。", h: "盲信せず、人間が確認する必要があります。" },
+            { q: "ガイドラインは、AIサービスの提供者（Provider）に対して、どのような責任を求めていますか？", o: ["AIの品質管理、安全性確保、ユーザーへの適切な情報提供", "AIが起こしたすべてのトラブルに対して法的責任を負う", "AIの利用料金を無料にする", "AIの開発を中止する"], a: 0, r: "提供者はサービス全体を管理し、ユーザーが安全かつ適切に利用できるようにする責任があります。", h: "サービスを「提供する」立場としての責任です。" },
+            { q: "AIを利用するすべてのステークホルダーに対して、共通して求められる責任は何ですか？", o: ["AIを積極的に開発すること", "AIを一切利用しないこと", "AIを人間のために適切かつ安全に利用すること", "AIの利用料金を支払うこと"], a: 2, r: "AI事業者だけでなく、すべての利用者が、人間のためにAIを適切かつ安全に利用する責任を負います。", h: "「人間に適した形」でAIを使うことが大切です。" }
+        ],
+        hard: [
+            // ガバナンス、評価、最新課題
+            { q: "組織がAIを適切に管理し、リスクを統制するための体制を整備することを何と呼びますか？", o: ["AIマネジメント", "AIガバナンス", "AIコンプライアンス", "AIリスク管理"], a: 1, r: "組織全体としてAI利活用の方針を決定し、実施状況を監視・評価する「ガバナンス」が重要です。", h: "組織全体の「統治」を意味する言葉です。" },
+            { q: "AI利活用ガイドラインは、現時点でどのような位置づけですか？", o: ["法律であり、違反すると罰則がある", "国際条約であり、他国にも適用される", "法的拘束力のない「ソフトロー」であり、自主的な取り組みを促す", "AI開発者だけが守るべき技術標準"], a: 2, r: "ガイドラインは法律ではなく、関係者が自発的に従うことで、健全なAI社会を構築することを目指しています。", h: "法律ではないが、守ることが望ましい「指針」です。" }
+        ]
+    }
 };
 
 const shuffle = (array) => [...array].sort(() => Math.random() - 0.5);
 
-// 最終的なクイズセットを作成（10問）
+// 最終的なクイズセットを作成（合計10問抽出）
 let quizSet = [
-    ...shuffle(bank.jc).slice(0, 3),    // JC・千歳から3問
-    ...shuffle(bank.easy).slice(0, 4),  // 初級AIから4問
-    ...shuffle(bank.mid).slice(0, 2),   // 中級AIから2問
-    ...shuffle(bank.hard).slice(0, 1)   // 上級AIから1問
+    ...shuffle(bank.jc).slice(0, 2),    // JC・千歳から2問固定
+    ...shuffle(bank.ai.easy).slice(0, 3), // 初級AIから3問
+    ...shuffle(bank.ai.mid).slice(0, 3),  // 中級AIから3問
+    ...shuffle(bank.ai.hard).slice(0, 2)  // 上級AIから2問
 ];
 
-let current = 0, score = 0;
+let currentIdx = 0, score = 0;
 const qEl = document.getElementById('question'), optEl = document.getElementById('options');
 const fbEl = document.getElementById('feedback'), hintEl = document.getElementById('hint-box');
 const nextBtn = document.getElementById('next-btn'), progEl = document.getElementById('progress');
 
 function render() {
-    const data = quizSet[current];
-    progEl.innerText = `${current + 1} / 10`;
+    const data = quizSet[currentIdx];
+    progEl.innerText = `${currentIdx + 1} / 10`;
     qEl.innerText = data.q;
     optEl.innerHTML = '';
     fbEl.style.display = nextBtn.style.display = 'none';
@@ -125,7 +123,7 @@ function render() {
 }
 
 function select(idx) {
-    const data = quizSet[current], btns = optEl.getElementsByClassName('option-btn');
+    const data = quizSet[currentIdx], btns = optEl.getElementsByClassName('option-btn');
     for (let b of btns) b.disabled = true;
     
     if (idx === data.a) {
@@ -145,17 +143,17 @@ function select(idx) {
 }
 
 nextBtn.onclick = () => {
-    current++;
-    if (current < 10) render();
+    currentIdx++;
+    if (currentIdx < 10) render();
     else {
         document.getElementById('quiz-screen').style.display = 'none';
         document.getElementById('result-screen').style.display = 'block';
         document.getElementById('final-score').innerText = score;
         let msg = "";
-        if(score === 10) msg = "完璧です！千歳のAIマスターはあなたです！";
-        else if(score >= 8) msg = "素晴らしい！AIを駆使して千歳を盛り上げましょう！";
-        else if(score >= 5) msg = "ナイス！AIの可能性を感じていただけたでしょうか？";
-        else msg = "伸びしろ抜群！AIと一緒にどんどん試していきましょう！";
+        if(score === 10) msg = "完璧です！千歳JCのガバナンス委員長です！";
+        else if(score >= 8) msg = "素晴らしい！AIを安全かつ適切に使いこなしましょう！";
+        else if(score >= 5) msg = "ナイス！AIの可能性と感じながらも、リスクも意識できましたね。";
+        else msg = "伸びしろたっぷり！AI委員長に「総務省ガイドライン」について聞いてみましょう！";
         document.getElementById('eval-msg').innerText = msg;
     }
 };
